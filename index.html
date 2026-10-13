@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kodein Academy — Belajar, Praktik, Berkarya</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Konsep: jendela editor kode. Dua "tab file" (galeri & pendaftaran), hasil form tampil seperti output JSON. */
+:root{
+  --bg:#f4f5fb; --surface:#ffffff; --ink:#151a3d; --muted:#565d85; --line:#d9dcee;
+  --accent:#d9400f; --on-accent:#ffffff; --ok:#12805f; --err:#c0262d;
+  --code-bg:#101436; --code-fg:#e8eaff; --c1:#ff9b6b; --c2:#6ee7c0; --c3:#9aa3ff; --c4:#7a82b8;
+  --display:"Manrope",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0f21; --surface:#151936; --ink:#ecedff; --muted:#a0a6cf; --line:#2b3167;
+    --accent:#ff7a45; --on-accent:#1a0b05; --ok:#3fd8ae; --err:#ff7b80; --code-bg:#080a18; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0f21; --surface:#151936; --ink:#ecedff; --muted:#a0a6cf; --line:#2b3167;
+  --accent:#ff7a45; --on-accent:#1a0b05; --ok:#3fd8ae; --err:#ff7b80; --code-bg:#080a18; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--body)}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* bar atas */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:flex-end;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding-top:10px}
+.brand{font:800 1.15rem var(--display);letter-spacing:-.01em;padding-bottom:10px}
+.brand span{font:500 1rem var(--mono);color:var(--accent)}
+.tabs{display:flex;gap:4px;align-items:flex-end}
+.tab{font:600 .82rem var(--body);padding:10px 15px;background:transparent;color:var(--muted);border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;cursor:pointer;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);border-color:var(--line);border-top:3px solid var(--accent)}
+.theme{font:500 .8rem var(--mono);background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 10px;margin-bottom:8px;cursor:pointer}
+
+/* hero */
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:32px;align-items:center;padding-block:48px 40px}
+.hero>*{min-width:0}
+.eyebrow{font:500 .85rem var(--mono);color:var(--accent);margin:0 0 14px}
+.hero h1{font-size:clamp(2.35rem,5.4vw,3.85rem);font-weight:800;line-height:1.08;letter-spacing:-.045em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.lead{font-size:1.1rem;color:var(--muted);max-width:46ch;margin:18px 0 24px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{font:700 .96rem var(--body);padding:12px 22px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:hover{filter:brightness(1.07)}
+.facts{font:400 .8rem var(--mono);color:var(--muted);margin:22px 0 0}
+
+
+.hero-visual{display:grid;gap:12px;min-width:0}
+.hero-photo{display:block;width:100%;height:205px;object-fit:cover;border:1px solid var(--line);border-radius:12px;filter:saturate(.82)}
+.hero-visual .win{margin-top:-1px}
+.card img{background:var(--line);object-fit:cover;transition:transform .35s ease}
+.card:hover img{transform:scale(1.025)}
+.card{transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--accent);transform:translateY(-3px)}
+@media(max-width:600px){.hero-photo{height:170px}}
+\n/* jendela kode */
+.win{background:var(--code-bg);color:var(--code-fg);border-radius:12px;border:1px solid var(--line);overflow:hidden;font:400 .88rem/1.85 var(--mono)}
+.win-top{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid rgba(154,163,255,.18);font-size:.75rem;color:var(--c4)}
+.win-top i{width:10px;height:10px;border-radius:50%;background:var(--c4);opacity:.55}
+.win-top b{font-weight:500;margin-left:8px}
+.win pre{margin:0;padding:14px 16px;overflow-x:auto;font:inherit;white-space:pre}
+.win pre.wrapit{white-space:pre-wrap;overflow-wrap:anywhere}
+.ln{display:inline-block;width:2ch;margin-right:2ch;color:var(--c4);text-align:right;user-select:none}
+.k{color:var(--c1)}.s{color:var(--c2)}.f{color:var(--c3)}.c{color:var(--c4)}
+.caret{display:inline-block;width:.6ch;height:1.1em;background:var(--c2);vertical-align:text-bottom;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.caret{animation:none}html{scroll-behavior:auto}}
+
+/* galeri */
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.section-head h2{font-size:clamp(1.6rem,3.4vw,2.2rem);font-weight:800;letter-spacing:-.02em}
+.section-head p{margin:6px 0 0;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:500 .8rem var(--mono);padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));padding-bottom:64px}
+.card{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card img{display:block;width:100%;aspect-ratio:8/5;object-fit:cover;border-bottom:1px solid var(--line)}
+.card figcaption{padding:16px 18px 20px;display:flex;flex-direction:column;gap:8px}
+.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:500 .74rem var(--mono);color:var(--muted)}
+.tag{color:var(--accent)}
+.card h3{font-size:1.2rem;font-weight:700;line-height:1.25}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+
+/* Form bahasa pemrograman: pilihan jamak sesuai instruksi tugas */
+.language-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.language-choice{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;font-weight:500;font-size:.92rem}
+.language-choice input{accent-color:var(--accent);margin:0;width:16px;height:16px}
+.language-choice:has(input:checked){border-color:var(--accent);background:var(--surface);box-shadow:inset 0 0 0 1px var(--accent)}
+@media(max-width:520px){.language-options{grid-template-columns:1fr 1fr}}
+.panel{padding:26px}
+.field{gap:8px}
+.field label,.field legend{font-size:.94rem}
+input[type=text],input[type=tel],select,textarea{border-radius:9px;padding:12px 13px}
+.btn{transition:transform .18s ease,filter .18s ease}
+.btn:active{transform:translateY(1px)}
+
+/* pendaftaran */
+.reg{display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start;padding-bottom:48px}
+.reg>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px}
+form{display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;border:0;padding:0;margin:0}
+.field label,.field legend{font-weight:600;font-size:.92rem;display:flex;justify-content:space-between;gap:8px;padding:0}
+.field .count{font:400 .75rem var(--mono);color:var(--muted)}
+input[type=text],input[type=tel],select,textarea{font:inherit;width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:92px;resize:vertical}
+.field.bad input,.field.bad select,.field.bad textarea{border-color:var(--err)}
+.err{font-size:.82rem;color:var(--err);min-height:1.2em}
+.radios{display:flex;gap:10px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;font-weight:500}
+.pill input{accent-color:var(--accent);margin:0}
+.pill:has(input:checked){border-color:var(--accent);background:var(--surface)}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.note{font-size:.82rem;color:var(--muted);margin:10px 0 0}
+@media (min-width:860px){.side{position:sticky;top:84px}}
+
+/* hasil */
+.result{margin-bottom:64px;border-color:var(--ok)}
+.result h2{font-size:1.5rem;font-weight:800;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{font:500 .75rem var(--mono);color:var(--ok);border:1px solid var(--ok);border-radius:999px;padding:3px 10px}
+dl.rows{display:grid;grid-template-columns:minmax(120px,190px) 1fr;margin:18px 0 22px;border-top:1px solid var(--line)}
+dl.rows dt,dl.rows dd{margin:0;padding:11px 0;border-bottom:1px solid var(--line);min-width:0}
+dl.rows dt{font:500 .8rem var(--mono);color:var(--muted);padding-right:12px}
+dl.rows dd{font-weight:500;overflow-wrap:anywhere}
+@media (max-width:520px){dl.rows{grid-template-columns:1fr}dl.rows dt{border-bottom:0;padding-bottom:0}}
+
+/* dialog konfirmasi */
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(8,10,24,.62)}
+.dialog{width:100%;max-width:420px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:26px}
+.dialog h2{font-size:1.35rem;font-weight:800;line-height:1.25}
+.dialog p{color:var(--muted);margin:10px 0 22px}
+.dialog .actions{justify-content:flex-end;margin:0}
+
+footer{border-top:1px solid var(--line);padding-block:22px 32px;font:400 .8rem var(--mono);color:var(--muted)}
+
+/* Visual refinement: larger, more readable typography */
+body{font-size:17px;line-height:1.68}
+.brand{font-size:1.32rem;letter-spacing:-.045em}
+.tab{font-size:.94rem;padding:11px 17px}
+.theme{font-size:.88rem;padding:7px 12px}
+.hero{gap:38px;padding-block:58px 52px}
+.hero h1{font-size:clamp(2.8rem,6vw,4.5rem);line-height:1.06;letter-spacing:-.055em}
+.eyebrow{font-size:.94rem}
+.lead{font-size:1.2rem;line-height:1.7}
+.facts{font-size:.88rem;line-height:1.8}
+.section-head h2{font-size:clamp(1.9rem,3.7vw,2.65rem);line-height:1.15}
+.section-head p{font-size:1.02rem;line-height:1.7}
+.card h3{font-size:1.3rem;line-height:1.3}
+.card p{font-size:1.02rem;line-height:1.7}
+.meta{font-size:.82rem}.chip{font-size:.88rem}
+.btn{font-size:1.03rem;padding:13px 23px}
+.registration-hero{margin:0 -16px 30px;padding:40px 34px 42px;background:linear-gradient(120deg,#101436,#1b2451);color:#f4f5ff;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden}
+.registration-hero:after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;right:9%;top:-160px;border:1px solid #858bff55;box-shadow:0 0 0 28px #858bff0c,0 0 0 58px #858bff0a}
+.registration-hero-copy{position:relative;z-index:1;max-width:690px}
+.registration-kicker{font:500 .85rem var(--mono);letter-spacing:.12em;color:#ff9b6b;background:#ffffff12;border:1px solid #ffffff24;border-radius:99px;padding:7px 12px;display:inline-block}
+.registration-hero h1{font:800 clamp(2.3rem,4.6vw,3.55rem)/1.1 var(--display);letter-spacing:-.05em;margin:18px 0 12px}
+.registration-hero h1 em{font-style:normal;color:#a7a2ff}
+.registration-hero p{font-size:1.08rem;line-height:1.7;color:#c8cbea;margin:0;max-width:580px}
+.registration-hero-art{font:800 clamp(4rem,8vw,7rem)/1 var(--mono);color:#ff9b6b;text-shadow:5px 5px 0 #6658ff;transform:rotate(-7deg);position:relative;z-index:1;margin-right:3%}
+.reg{display:block;max-width:940px;margin:0 auto 46px;padding-bottom:0}
+.registration-panel{padding:clamp(22px,4vw,38px);border-radius:14px;box-shadow:0 12px 35px #171a3d0b}
+.form-card-heading{display:flex;align-items:center;gap:14px;padding-bottom:23px;margin-bottom:25px;border-bottom:1px solid var(--line)}
+.form-heading-icon{width:48px;height:48px;border-radius:12px;background:#eeedff;color:#5547ed;display:grid;place-items:center;font-size:25px;flex-shrink:0}
+.form-card-heading h2{font-size:1.55rem;line-height:1.25;letter-spacing:-.035em;margin:0 0 4px}
+.form-card-heading p{font-size:.98rem;color:var(--muted);margin:0}
+.registration-panel form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 26px}
+.registration-panel .field{gap:9px}
+.registration-panel .field label,.registration-panel .field legend{font-size:1.02rem;font-weight:700}
+.registration-panel input[type=text],.registration-panel input[type=tel],.registration-panel select,.registration-panel textarea{font-size:1rem;padding:14px 15px;border-radius:9px;min-height:52px}
+.registration-panel textarea{min-height:112px}
+.registration-panel #f-bahasa{grid-column:2;grid-row:3 / span 2}
+.registration-panel .language-options{gap:10px}
+.registration-panel .language-choice{font-size:.98rem;padding:12px;border-radius:9px}
+.registration-panel .radios{gap:12px}
+.registration-panel .pill{font-size:.98rem;padding:12px 15px}
+.registration-panel .err{font-size:.9rem}
+.registration-panel .actions{grid-column:1/-1;display:flex;justify-content:flex-end;border-top:1px solid var(--line);padding-top:23px;margin-top:2px}
+.registration-panel .actions .btn.primary{min-width:210px}
+.result{padding:30px;border-radius:14px;background:var(--surface);box-shadow:0 12px 35px #171a3d0b}
+.result h2{font-size:1.7rem;line-height:1.3}
+dl.rows dt{font-size:.92rem}dl.rows dd{font-size:1.02rem;line-height:1.6}.badge{font-size:.8rem}
+@media(max-width:760px){.registration-panel form{grid-template-columns:1fr}.registration-panel #f-bahasa{grid-column:auto;grid-row:auto}.registration-panel .actions{grid-column:auto}.registration-hero{padding:32px 22px}.registration-hero-art{font-size:3.5rem;margin:0}}
+@media(max-width:520px){body{font-size:16px}.hero{padding-block:38px}.hero h1{font-size:2.65rem}.section-head h2{font-size:1.9rem}.registration-hero{margin:0 -16px 22px;padding:30px 18px}.registration-hero h1{font-size:2.25rem}.registration-hero-art{display:none}.form-card-heading h2{font-size:1.28rem}.registration-panel{padding:21px 16px}.registration-panel .actions .btn.primary{width:100%}.result{padding:22px 17px}}
+
+
+/* Final polish: samakan warna pendaftaran dengan identitas oranye Kodein */
+:root{
+  --accent:#d9400f;
+  --on-accent:#ffffff;
+}
+.registration-kicker{
+  color:#ff9b6b;
+  background:rgba(255,255,255,.07);
+  border-color:rgba(255,155,107,.32);
+}
+.registration-hero h1 em{color:#ff9b6b}
+.registration-hero-art{
+  color:#ff9b6b;
+  text-shadow:5px 5px 0 #9e3218;
+}
+.form-heading-icon{
+  background:#fff0e8;
+  color:#d9400f;
+}
+.registration-panel .language-heading{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  margin-bottom:3px;
+}
+.registration-panel .language-heading label{
+  display:block;
+  font-size:1.02rem;
+  line-height:1.4;
+}
+.language-help{
+  margin:0;
+  color:var(--muted);
+  font-size:.87rem;
+  line-height:1.45;
+}
+.registration-panel .language-options{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:2px;
+}
+.registration-panel .language-choice{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  min-height:48px;
+  padding:11px 13px;
+  font-size:.98rem;
+  line-height:1.35;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:9px;
+  transition:border-color .18s,background .18s,transform .18s;
+}
+.registration-panel .language-choice:hover{
+  border-color:#e98a66;
+  background:#fff8f4;
+}
+.registration-panel .language-choice input{
+  flex:0 0 17px;
+  width:17px;
+  height:17px;
+  margin:0;
+  accent-color:var(--accent);
+}
+.registration-panel .language-choice:has(input:checked){
+  border-color:var(--accent);
+  background:#fff0e8;
+  box-shadow:inset 0 0 0 1px var(--accent);
+  color:#8f2c0b;
+}
+.registration-panel .field label,.registration-panel .field legend{
+  line-height:1.45;
+}
+.registration-panel .actions .btn.primary{
+  box-shadow:0 4px 0 #9e3218;
+}
+.registration-panel .actions .btn.primary:hover{
+  filter:brightness(1.04);
+  transform:translateY(-1px);
+}
+.registration-panel input[type=text]:focus,
+.registration-panel input[type=tel]:focus,
+.registration-panel textarea:focus{
+  outline:3px solid rgba(217,64,15,.14);
+  border-color:var(--accent);
+}
+@media(max-width:760px){
+  .registration-panel .language-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:430px){
+  .registration-panel .language-options{grid-template-columns:1fr}
+  .registration-panel .language-choice{min-height:45px}
+  .language-help{font-size:.84rem}
+}
+
+
+/* --- Identitas visual final: orange + warm cream, tanpa aksen ungu --- */
+.brand{
+  font-size:clamp(1.55rem,2.5vw,1.95rem);
+  letter-spacing:-.065em;
+  line-height:1.1;
+  padding-bottom:9px;
+  font-weight:800;
+}
+.brand span{
+  font:inherit;
+  color:var(--accent);
+  letter-spacing:-.065em;
+}
+.registration-hero{
+  margin:12px 0 30px;
+  padding:clamp(28px,4vw,48px);
+  min-height:250px;
+  border:1px solid #f0d9cb;
+  border-left:7px solid #e85b2a;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 88% 18%,rgba(255,155,107,.24) 0 5px,transparent 6px),
+    radial-gradient(circle at 92% 80%,rgba(255,155,107,.22) 0 4px,transparent 5px),
+    linear-gradient(115deg,#fff8f2 0%,#fff1e7 55%,#fce6d8 100%);
+  color:#17213d;
+  box-shadow:0 12px 28px rgba(90,47,25,.055);
+  position:relative;
+  isolation:isolate;
+}
+.registration-hero:before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:190px;height:190px;
+  right:10%;top:50%;
+  transform:translateY(-50%) rotate(12deg);
+  border:1px dashed rgba(217,64,15,.28);
+  border-radius:34px;
+}
+.registration-hero:after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:140px;height:140px;
+  right:12%;top:50%;
+  transform:translateY(-50%) rotate(28deg);
+  border:1px solid rgba(217,64,15,.16);
+  border-radius:30px;
+  box-shadow:0 0 0 16px rgba(217,64,15,.035);
+}
+.registration-hero-copy{max-width:650px}
+.registration-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid #f0c6b1;
+  color:#b63d16;
+  font:700 .8rem var(--mono);
+  letter-spacing:.08em;
+}
+.registration-hero h1{
+  font:800 clamp(2.45rem,5vw,4rem)/1.08 var(--display);
+  letter-spacing:-.06em;
+  color:#17213d;
+  margin:18px 0 12px;
+}
+.registration-hero h1 em{
+  font-style:normal;
+  color:#d94c1b;
+}
+.registration-hero p{
+  font-size:clamp(1rem,1.5vw,1.12rem);
+  line-height:1.75;
+  color:#555d72;
+  max-width:56ch;
+}
+.registration-hero-art{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  z-index:1;
+  flex:0 0 clamp(145px,22%,230px);
+  min-height:155px;
+  margin:0 2% 0 0;
+  transform:none;
+  color:#e85b2a;
+  text-shadow:none;
+  font:800 1rem var(--display);
+}
+.registration-hero-art .art-orbit{
+  position:absolute;
+  width:138px;height:138px;
+  border-radius:50%;
+  border:2px solid rgba(232,91,42,.25);
+  background:rgba(255,255,255,.45);
+  box-shadow:0 0 0 12px rgba(232,91,42,.06),0 0 0 25px rgba(232,91,42,.035);
+}
+.registration-hero-art .art-code{
+  position:relative;
+  z-index:1;
+  font:800 clamp(2.9rem,5vw,4.5rem)/1 var(--mono);
+  color:#fffaf6;
+  background:#e85b2a;
+  padding:17px 12px;
+  border-radius:15px;
+  box-shadow:5px 6px 0 #b83f1b;
+  transform:rotate(-6deg);
+}
+.registration-hero-art .art-label{
+  position:absolute;
+  z-index:2;
+  right:-3px;bottom:2px;
+  padding:9px 11px;
+  border:1px solid #f0c6b1;
+  border-radius:9px;
+  background:#fff;
+  color:#a93b17;
+  font:700 .65rem/1.5 var(--mono);
+  letter-spacing:.04em;
+  box-shadow:0 5px 14px rgba(90,47,25,.08);
+}
+.form-heading-icon{
+  background:#fff0e8;
+  color:#d9400f;
+  border:1px solid #f4d2c0;
+}
+.registration-panel .language-choice:has(input:checked){
+  border-color:#d9400f;
+  background:#fff0e8;
+  box-shadow:inset 0 0 0 1px #d9400f;
+  color:#8f2c0b;
+}
+.registration-panel .language-choice:hover{
+  border-color:#e98a66;
+  background:#fff8f4;
+}
+@media(max-width:760px){
+  .registration-hero{padding:30px 24px;gap:16px}
+  .registration-hero-art{flex-basis:120px;min-height:120px;margin:0}
+  .registration-hero-art .art-orbit{width:105px;height:105px}
+  .registration-hero-art .art-code{font-size:2.5rem;padding:13px 9px}
+  .registration-hero-art .art-label{font-size:.55rem;right:-5px}
+}
+@media(max-width:520px){
+  .brand{font-size:1.48rem}
+  .brand span{font-size:inherit}
+  .registration-hero{margin:8px 0 22px;padding:25px 20px;min-height:0;border-left-width:5px}
+  .registration-hero h1{font-size:2.3rem;line-height:1.1;margin:15px 0 10px}
+  .registration-hero-art{display:none}
+  .registration-hero:before{width:110px;height:110px;right:8%;top:18%;transform:rotate(12deg)}
+  .registration-hero:after{width:80px;height:80px;right:12%;top:18%;transform:rotate(28deg)}
+}
+
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="brand">kodein<span>/academy</span></div>
+    <nav class="tabs" role="tablist" aria-label="Tampilan">
+      <button class="tab" role="tab" data-go="galeri" aria-selected="true">Galeri</button>
+      <button class="tab" role="tab" data-go="daftar" aria-selected="false">Pendaftaran</button>
+    </nav>
+    <button class="theme" id="theme" type="button">Ganti tema</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- TAMPILAN 1: GALERI -->
+  <section class="view" id="view-galeri">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">// program pelatihan pemrograman</p>
+        <h1>Belajar ngoding, langsung <em>dikerjain.</em></h1>
+        <p class="lead">Kodein Academy ngajarin dari dasar sampai proyek akhir bareng mentor. Kelasnya kecil, praktiknya banyak, dan semua peserta pulang bawa karya sendiri.</p>
+        <div class="cta">
+          <button class="btn primary" type="button" data-go="daftar">Daftar sekarang</button>
+          <a class="btn" href="#galeri-kegiatan">Lihat kegiatan</a>
+        </div>
+        <p class="facts">Belajar dari dasar · praktik langsung · bangun proyek sendiri</p>
+      </div>
+      <div class="hero-visual">
+       <img class="hero-photo" src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=85" alt="Peserta belajar dan berkolaborasi dalam pelatihan teknologi" loading="lazy">
+       <div class="win" aria-hidden="true">
+        <div class="win-top"><i></i><i></i><i></i><b>belajar.js</b></div>
+<pre><span class="ln">1</span><span class="k">const</span> kamu = { nama: <span class="s">"calon developer"</span> };
+<span class="ln">2</span><span class="k">function</span> <span class="f">belajar</span>(bahasa) {
+<span class="ln">3</span>  <span class="k">return</span> bahasa + <span class="s">" + proyek nyata"</span>;
+<span class="ln">4</span>}
+<span class="ln">5</span><span class="c">// mulai perjalanan coding-mu</span>
+<span class="ln">6</span>console.<span class="f">log</span>(<span class="f">belajar</span>(<span class="s">"Python"</span>));<span class="caret"></span></pre>
+       </div>
+      </div>
+    </div>
+
+    <div id="galeri-kegiatan">
+      <div class="section-head">
+        <div>
+          <h2>Galeri kegiatan</h2>
+          <p>Dokumentasi kegiatan pelatihan Coding Academy.</p>
+        </div>
+        <div class="chips" id="chips" role="group" aria-label="Filter kategori"></div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <!-- TAMPILAN 2: PENDAFTARAN -->
+  <section class="view" id="view-daftar" hidden>
+    <section class="registration-hero">
+      <div class="registration-hero-copy">
+        <span class="registration-kicker">FORM PENDAFTARAN</span>
+        <h1>Mulai Perjalananmu<br><em>di Dunia Coding.</em></h1>
+        <p>Lengkapi data berikut untuk bergabung dalam kegiatan pelatihan Kodein Academy.</p>
+      </div>
+      <div class="registration-hero-art" aria-hidden="true"><span class="art-orbit"></span><span class="art-code">&lt;/&gt;</span><span class="art-label">LEARN<br>· BUILD<br>· GROW</span></div>
+    </section>
+
+    <div class="reg">
+      <div class="panel registration-panel">
+        <div class="form-card-heading"><span class="form-heading-icon">▤</span><div><h2>Formulir Pendaftaran Peserta</h2><p>Pastikan semua data diisi dengan benar.</p></div></div>
+        <form id="form" novalidate>
+          <div class="field" id="f-nik">
+            <label for="nik"><span>NIK</span><span class="count" id="nikCount">0/16</span></label>
+            <input type="text" id="nik" name="nik" inputmode="numeric" maxlength="16" autocomplete="off" placeholder="16 digit sesuai KTP">
+            <span class="err" id="err-nik" aria-live="polite"></span>
+          </div>
+          <div class="field" id="f-nama">
+            <label for="nama">Nama lengkap</label>
+            <input type="text" id="nama" name="nama" autocomplete="name" placeholder="Sesuai KTP">
+            <span class="err" id="err-nama" aria-live="polite"></span>
+          </div>
+          <fieldset class="field" id="f-gender">
+            <legend>Jenis kelamin</legend>
+            <div class="radios">
+              <label class="pill"><input type="radio" name="gender" value="Laki-laki"> Laki-laki</label>
+              <label class="pill"><input type="radio" name="gender" value="Perempuan"> Perempuan</label>
+            </div>
+            <span class="err" id="err-gender" aria-live="polite"></span>
+          </fieldset>
+          <div class="field" id="f-hp">
+            <label for="hp">No HP</label>
+            <input type="tel" id="hp" name="hp" inputmode="numeric" maxlength="13" autocomplete="tel" placeholder="08xxxxxxxxxx">
+            <span class="err" id="err-hp" aria-live="polite"></span>
+          </div>
+          <div class="field" id="f-alamat">
+            <label for="alamat">Alamat</label>
+            <textarea id="alamat" name="alamat" autocomplete="street-address" placeholder="Jalan, nomor, kelurahan, kota"></textarea>
+            <span class="err" id="err-alamat" aria-live="polite"></span>
+          </div>
+          <div class="field" id="f-bahasa">
+            <div class="language-heading">
+              <label for="languageOptions">Bahasa pemrograman yang diminati</label>
+              <p class="language-help">Pilih satu atau beberapa bahasa yang ingin kamu pelajari.</p>
+            </div>
+            <div class="language-options" id="languageOptions">
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="Python"> Python</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="JavaScript"> JavaScript</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="Java"> Java</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="PHP"> PHP</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="C++"> C++</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="Kotlin"> Kotlin</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="Dart (Flutter)"> Dart (Flutter)</label>
+              <label class="language-choice"><input type="checkbox" name="bahasa" value="Go"> Go</label>
+            </div>
+            <span class="err" id="err-bahasa" aria-live="polite"></span>
+          </div>
+          <div class="actions">
+            <button class="btn primary" type="submit">Simpan</button>
+            <button class="btn" type="reset" id="resetBtn">Kosongkan</button>
+          </div>
+        </form>
+      </div>
+
+      <div hidden><pre id="preview"></pre></div>
+    </div>
+
+    <div class="panel result" id="result" hidden>
+      <h2 id="resultTitle" tabindex="-1">Pendaftaran tersimpan <span class="badge" id="regNo"></span></h2>
+      <dl class="rows" id="rows"></dl>
+      <div class="actions">
+        <button class="btn primary" type="button" id="again">Daftarkan peserta lain</button>
+        <button class="btn" type="button" data-go="galeri">Kembali ke galeri</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer><div class="wrap">Kodein Academy · Galeri Kegiatan dan Formulir Pendaftaran</div></footer>
+
+<!-- Dialog konfirmasi -->
+<div class="overlay" id="modal" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h2 id="dlgTitle">Apakah Anda sudah yakin untuk menyimpan?</h2>
+    <p>Data yang sudah disimpan akan ditampilkan sesuai isian form.</p>
+    <div class="actions">
+      <button class="btn" type="button" id="no">Tidak</button>
+      <button class="btn primary" type="button" id="yes">Ya</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+
+/* ---------- Data galeri (ganti foto & deskripsi dengan punyamu) ---------- */
+const DATA = [
+  {t:"Demo Day Proyek Akhir", k:"Event", d:"20 Sep 2026", lbl:"ok", seed:11, img:"https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=85", c:["#ff9b6b","#6ee7c0"],
+   p:"Setiap peserta mempresentasikan proyek akhirnya di depan mentor dan teman angkatan, lengkap dengan sesi tanya jawab."},
+  {t:"Bootcamp Python Dasar", k:"Bootcamp", d:"6 Sep 2026", lbl:"py", seed:3, img:"https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85", c:["#6ee7c0","#9aa3ff"],
+   p:"Dua puluh peserta belajar variabel, perulangan, dan fungsi dari nol, lalu menutup hari dengan kalkulator konsol buatan sendiri."},
+  {t:"Workshop HTML, CSS, dan JavaScript", k:"Workshop", d:"23 Agu 2026", lbl:"</>", seed:7, img:"https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=85", c:["#ff9b6b","#9aa3ff"],
+   p:"Membangun halaman profil pribadi dari kerangka HTML sampai interaksi JavaScript, lalu dipublikasikan lewat GitHub Pages."},
+  {t:"Hackathon 24 Jam", k:"Event", d:"12 Jul 2026", lbl:"24h", seed:19, img:"https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85", c:["#9aa3ff","#ff9b6b"],
+   p:"Tim berempat membangun aplikasi layanan kampus dalam sehari semalam. Juri menilai ide, kode, dan presentasi demo."},
+  {t:"Kelas Mobile dengan Flutter", k:"Bootcamp", d:"14 Jun 2026", lbl:"{ }", seed:5, img:"https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85&sat=-20", c:["#6ee7c0","#ff9b6b"],
+   p:"Peserta membuat aplikasi catatan sederhana dan mencobanya langsung di ponsel masing-masing."},
+  {t:"Sesi Mentoring Karier", k:"Workshop", d:"31 Mei 2026", lbl:"1:8", seed:23, img:"https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=85", c:["#9aa3ff","#6ee7c0"],
+   p:"Mentor dari industri mengulas portofolio peserta dan menjelaskan alur lamaran kerja junior developer. Rasio mentor 1 banding 8."}
+];
+
+/* Galeri memakai foto kegiatan sungguhan dari Unsplash. */
+function renderGallery(filter){
+  $("#grid").innerHTML = DATA.filter(x => filter === "Semua" || x.k === filter).map(x => `
+    <figure class="card">
+      <img src="${x.img}" alt="Foto kegiatan ${x.t}" width="480" height="300" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80'">
+      <figcaption>
+        <div class="meta"><span class="tag">${x.k}</span><span>${x.d}</span></div>
+        <h3>${x.t}</h3>
+        <p>${x.p}</p>
+      </figcaption>
+    </figure>`).join("");
+}
+$("#chips").innerHTML = ["Semua","Bootcamp","Workshop","Event"].map((n,i) =>
+  `<button class="chip" type="button" aria-pressed="${i===0}">${n}</button>`).join("");
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if(!b) return;
+  $$(".chip").forEach(c => c.setAttribute("aria-pressed", c === b));
+  renderGallery(b.textContent);
+});
+
+/* ---------- Pindah tampilan ---------- */
+function show(v){
+  if(v !== "daftar") v = "galeri";
+  $$(".view").forEach(s => s.hidden = s.id !== "view-" + v);
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.go === v));
+  try{ history.replaceState(null, "", "#" + v); }catch(e){}
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-go]"); if(b) show(b.dataset.go);
+});
+$("#theme").addEventListener("click", () => {
+  const r = document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  r.dataset.theme = dark ? "light" : "dark";
+});
+
+/* ---------- Form ---------- */
+const form = $("#form");
+const rules = {
+  nik:    v => /^\d{16}$/.test(v) ? "" : "NIK harus 16 digit angka.",
+  nama:   v => /^[A-Za-zÀ-ÿ'.\- ]{3,60}$/.test(v) ? "" : "Isi nama lengkap, minimal 3 huruf dan tanpa angka.",
+  gender: v => v ? "" : "Pilih salah satu jenis kelamin.",
+  hp:     v => /^08\d{8,11}$/.test(v) ? "" : "No HP diawali 08 dan terdiri dari 10 sampai 13 digit.",
+  alamat: v => v.length >= 10 ? "" : "Alamat minimal 10 karakter.",
+  bahasa: v => v.length ? "" : "Pilih minimal satu bahasa pemrograman yang diminati."
+};
+function vals(){
+  const f = form.elements, g = form.querySelector("input[name=gender]:checked");
+  return {nik:f.nik.value.trim(), nama:f.nama.value.trim().replace(/\s+/g," "), gender:g ? g.value : "",
+          hp:f.hp.value.trim(), alamat:f.alamat.value.trim(), bahasa:[...form.querySelectorAll("input[name=bahasa]:checked")].map(el => el.value)};
+}
+function check(k, v){
+  const msg = rules[k](v[k]);
+  $("#err-" + k).textContent = msg;
+  $("#f-" + k).classList.toggle("bad", !!msg);
+  return !msg;
+}
+function updatePreview(){
+  const v = vals();
+  $("#preview").textContent = JSON.stringify(
+    {nik:v.nik, nama_lengkap:v.nama, jenis_kelamin:v.gender, no_hp:v.hp, alamat:v.alamat, bahasa_pemrograman:v.bahasa}, null, 2);
+  $("#nikCount").textContent = v.nik.length + "/16";
+}
+form.addEventListener("input", e => {
+  if(e.target.name === "nik" || e.target.name === "hp") e.target.value = e.target.value.replace(/\D/g, "");
+  if(rules[e.target.name] && $("#f-" + e.target.name).classList.contains("bad")) check(e.target.name, vals());
+  updatePreview();
+});
+form.addEventListener("change", e => { if(rules[e.target.name]) check(e.target.name, vals()); });
+form.addEventListener("reset", () => setTimeout(() => {
+  Object.keys(rules).forEach(k => { $("#err-" + k).textContent = ""; $("#f-" + k).classList.remove("bad"); });
+  updatePreview();
+}));
+
+/* ---------- Dialog konfirmasi ---------- */
+let pending = null, lastFocus = null, seq = 0;
+function openModal(){ lastFocus = document.activeElement; $("#modal").hidden = false; $("#no").focus(); }
+function closeModal(){ $("#modal").hidden = true; if(lastFocus) lastFocus.focus(); }
+$("#modal").addEventListener("keydown", e => {
+  if(e.key === "Escape") closeModal();
+  if(e.key === "Tab"){
+    e.preventDefault();
+    const b = [$("#no"), $("#yes")], i = b.indexOf(document.activeElement);
+    b[(i + (e.shiftKey ? -1 : 1) + 2) % 2].focus();
+  }
+});
+$("#modal").addEventListener("click", e => { if(e.target.id === "modal") closeModal(); });
+$("#no").addEventListener("click", closeModal);
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const v = vals();
+  const ok = Object.keys(rules).map(k => check(k, v)).every(Boolean);
+  if(!ok){
+    const first = form.querySelector(".field.bad input, .field.bad select, .field.bad textarea");
+    if(first) first.focus();
+    return;
+  }
+  pending = v;
+  openModal();
+});
+
+$("#yes").addEventListener("click", () => {
+  const v = pending; if(!v) return;
+  $("#modal").hidden = true;
+  seq++;
+  $("#regNo").textContent = "KDA-" + new Date().getFullYear() + "-" + String(seq).padStart(4, "0");
+  const rows = [["NIK", v.nik], ["Nama lengkap", v.nama], ["Jenis kelamin", v.gender], ["No HP", v.hp],
+                ["Alamat", v.alamat], ["Bahasa pemrograman", v.bahasa.join(", ")],
+                ["Waktu daftar", new Date().toLocaleString("id-ID", {dateStyle:"long", timeStyle:"short"})]];
+  const dl = $("#rows"); dl.textContent = "";
+  rows.forEach(([k, val]) => {
+    const dt = document.createElement("dt"), dd = document.createElement("dd");
+    dt.textContent = k; dd.textContent = val; dl.append(dt, dd);
+  });
+  $("#result").hidden = false;
+  form.reset();
+  pending = null;
+  $("#result").scrollIntoView({behavior:"smooth", block:"start"});
+  $("#resultTitle").focus({preventScroll:true});
+});
+$("#again").addEventListener("click", () => {
+  $("#result").hidden = true;
+  form.reset();
+  pending = null;
+  updatePreview();
+  window.scrollTo({top:0, behavior:"smooth"});
+  setTimeout(() => $("#nik").focus({preventScroll:true}), 180);
+});
+
+/* ---------- Mulai ---------- */
+renderGallery("Semua");
+updatePreview();
+show(location.hash === "#daftar" ? "daftar" : "galeri");
+</script>
+</body>
+</html>
